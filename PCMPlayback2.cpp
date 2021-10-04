@@ -17,7 +17,8 @@ int main() {
     int size;
     snd_pcm_t *handle;
     snd_pcm_hw_params_t *params;
-    unsigned int val;
+    snd_pcm_format_t format;
+    unsigned int val, bytesPerSample;
     int dir;
     snd_pcm_uframes_t frames;
     char *buffer;
@@ -31,32 +32,26 @@ int main() {
         exit(1);
     }
 
-    /* allocate a hardware parameters object, this object has invalid values */
     snd_pcm_hw_params_alloca(&params);
 
     /* fill the object with default values i.e fill params with a full configuration space for a PCM,
      * the configuration space will be filled with all possible ranges for the PCM device */
     snd_pcm_hw_params_any(handle, params);
 
-    /* set the desired hardware parameters */
-
-    /* interleaved mode */
     snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
 
-    /* signed 16-bit little-endian format */
     snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
+    bytesPerSample = 2;
 
     int channels(2);
-    /* two channel(stereo = 2)(monno = 1) */
     snd_pcm_hw_params_set_channels(handle, params, channels);
 
-    /* 44100 samples/second sampling rate (CD quality) */
-    val = 44100; // 16000 as steve said
-    snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);
-    //snd_pcm_hw_params_set_rate(handle, params, val, dir);
+    val = 8000;
+    //snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);
+    snd_pcm_hw_params_set_rate(handle, params, val, dir);
 
-    frames = 32;
-    snd_pcm_hw_params_set_period_size_near(handle, params, &frames, &dir);
+    frames = 160;
+    snd_pcm_hw_params_set_period_size(handle, params, frames, dir);
 
     /* write the parameters to the driver */
     rc = snd_pcm_hw_params(handle, params);
@@ -70,7 +65,6 @@ int main() {
     std::cout << "PCM state: " << snd_pcm_state_name(snd_pcm_state(handle)) << std::endl;
 
     snd_pcm_hw_params_get_channels(params, &tmp);
-
     std::cout << "channels: " << tmp << std::endl;
 
     channels = tmp;
@@ -84,10 +78,14 @@ int main() {
     snd_pcm_hw_params_get_rate(params, &tmp, 0);
     std::cout << "rate: " << tmp << " bps" << std::endl;
    
+    snd_pcm_hw_params_get_format(params, &format);
+    std::cout << "format: " << format << std::endl;
+    
     int seconds = 5;
 
     /* use a buffer large enough to hold one period */
     snd_pcm_hw_params_get_period_size(params, &frames, &dir);
+    std::cout << "period size got " << frames << std::endl;
 
     size = frames * channels * 2; /* 2 bytes/sample */
     buffer = (char *)malloc(size);
@@ -129,7 +127,7 @@ int main() {
     std::cout << "here 1" << std::endl;
     snd_pcm_drain(handle);
     std::cout << "here 2" << std::endl;
-    // closes the specified PCM handle and frees all associated resources
+
     snd_pcm_close(handle);
 
 

@@ -10,12 +10,11 @@ int main() {
     int size;
     snd_pcm_t *handle;
     snd_pcm_hw_params_t *params;
-    unsigned int val;
+    unsigned int val, bytesPerSample;
     int dir;
     snd_pcm_uframes_t frames;
     char *buffer;
 
-    /* open pcm device for capturing  */
     rc = snd_pcm_open(&handle, "plughw:devOnPort10", SND_PCM_STREAM_CAPTURE, 0);
 
     if (rc < 0) {
@@ -29,22 +28,19 @@ int main() {
     /* fill it in with default values */
     snd_pcm_hw_params_any(handle, params);
 
-    /* interleaved mode */
     snd_pcm_hw_params_set_access(handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
 
-    /* signed 16 bit little endian format */
     snd_pcm_hw_params_set_format(handle, params, SND_PCM_FORMAT_S16_LE);
+    bytesPerSample = 2;
 
     int channels(2);
-    /* two channel - stereo *//* here if we use 1 in place of 2 it will not work */
     snd_pcm_hw_params_set_channels(handle, params, channels);
 
-    val = 44100;
-    snd_pcm_hw_params_set_rate_near(handle, params, &val, &dir);
+    val = 8000;
+    snd_pcm_hw_params_set_rate(handle, params, val, dir);
 
-    //frames = 160;
-    frames = 32;
-    snd_pcm_hw_params_set_period_size_near(handle, params, &frames, &dir);
+    frames = 160;
+    snd_pcm_hw_params_set_period_size(handle, params, frames, dir);
 
     /* write the parameters to the driver */
     rc = snd_pcm_hw_params(handle, params);
@@ -55,9 +51,9 @@ int main() {
     }
 
     /* use a buffer large enough to hold one period */
-    snd_pcm_hw_params_get_period_size(params, &frames, &dir);
+    //snd_pcm_hw_params_get_period_size(params, &frames, &dir);
 
-    size = frames * channels * 2; /* 2 bytes/sample, 2 channels */
+    size = frames * channels * bytesPerSample; /* 2 bytes/sample, 2 channels */
 
     buffer = (char *) malloc(size);
 
